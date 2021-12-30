@@ -1,6 +1,6 @@
 {
     "markdown-pdf.styles": [
-        "ACM.css"
+        "ACM\\ACM.css"
     ],
     "markdown-pdf.highlightStyle": "tomorrow.css"
 }
