@@ -3,9 +3,9 @@
 # ACM Cheat Table
 
 > ~~Author:~~ *Anonymous*
-> Version: v0.1.0
-> Date Created: 2021-12-28
-> Date Completed: 2021-12-29
+> Version: v1.0.0
+> Date Created: 2021-12-29
+> Date Completed: 2021-12-30
 > **Contact the administrators on the copyright of this article.**
 
 <!-- Reference: https://blog.csdn.net/xyqqwer/article/details/81433429 -->
@@ -36,6 +36,8 @@ int sieve(int n){
 ```
 
 ### I.II. 快速幂
+
+思想类似倍增。
 
 ```c++
 typedef long long LL;
@@ -749,24 +751,604 @@ int KMP(string pat, string txt) {
 
 ### IV.II. 字典树（Trie）
 
+```c++
+struct Trie {
+    int cnt;
+    Trie *next[maxn];
+    Trie() {
+        cnt = 0;
+        memset(next, 0, sizeof(next));
+    }
+};
+
+Trie *root;
+
+void Insert(char *word) {
+    Trie *tem = root;
+    while (*word != '\0') {
+        int x = *word - 'a';
+        if (tem->next[x] == NULL) tem->next[x] = new Trie;
+        tem = tem->next[x];
+        tem->cnt++;
+        word++;
+    }
+}
+
+int Search(char *word) {
+    Trie *tem = root;
+    for (int i = 0; word[i] != '\0'; i++) {
+        int x = word[i] - 'a';
+        if (tem->next[x] == NULL) return 0;
+        tem = tem->next[x];
+    }
+    return tem->cnt;
+}
+
+void Delete(char *word, int t) {
+    Trie *tem = root;
+    for (int i = 0; word[i] != '\0'; i++) {
+        int x = word[i] - 'a';
+        tem = tem->next[x];
+        (tem->cnt) -= t;
+    }
+    for (int i = 0; i < maxn; i++) tem->next[i] = NULL;
+}
+
+int main() {
+    int n;
+    char str1[50];
+    char str2[50];
+    while (scanf("%d", &n) != EOF) {
+        root = new Trie;
+        while (n--) {
+            scanf("%s %s", str1, str2);
+            if (str1[0] == 'i') Insert(str2);
+            else if (str1[0] == 's') {
+                if (Search(str2)) printf("Yes\n");
+                else printf("No\n");
+            } else {
+                int t = Search(str2);
+                if (t) Delete(str2, t);
+            }
+        }
+    }
+    return 0;
+}
+```
+
 ### IV.III. AC自动机（多模匹配）
+
+```c++
+#include <iostream>
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+using namespace std;
+
+#define N 1000010
+
+char str[N], keyword[N];
+int head, tail;
+
+struct node {
+    node *fail;
+    node *next[26];
+    int count;
+    node() {  // init
+        fail = NULL;  // 默认为空
+        count = 0;
+        for (int i = 0; i < 26; ++i) next[i] = NULL;
+    }
+} * q[N];
+
+node *root;
+
+void insert(char *str) {  // 建立Trie
+    int temp, len;
+    node *p = root;
+    len = strlen(str);
+    for (int i = 0; i < len; ++i) {
+        temp = str[i] - 'a';
+        if (p->next[temp] == NULL) p->next[temp] = new node();
+        p = p->next[temp];
+    }
+    p->count++;
+}
+
+void build_ac() {  // 初始化fail指针，BFS 数组模拟队列：
+    q[tail++] = root;
+    while (head != tail) {
+        node *p = q[head++]; // 弹出队头
+        node *temp = NULL;
+        for (int i = 0; i < 26; ++i) {
+            if (p->next[i] != NULL) {
+                if (p == root) // 第一个元素fail必指向根
+                    p->next[i]->fail = root;
+                else {
+                    temp = p->fail; // 失败指针
+                    while (temp != NULL) {  // 2种情况结束：匹配为空or找到匹配
+                        if (temp->next[i] != NULL) {  // 找到匹配
+                            p->next[i]->fail = temp->next[i];
+                            break;
+                        }
+                        temp = temp->fail;
+                    }
+                    if (temp == NULL) // 为空则从头匹配
+                        p->next[i]->fail = root;
+                }
+                q[tail++] = p->next[i]; // 入队
+            }
+        }
+    }
+}
+
+int query() // 扫描
+{
+    int index, len, result;
+    node *p = root; // Tire入口
+    result = 0;
+    len = strlen(str);
+    for (int i = 0; i < len; ++i) {
+        index = str[i] - 'a';
+        while (p->next[index] == NULL && p != root) // 跳转失败指针
+            p = p->fail;
+        p = p->next[index];
+        if (p == NULL) p = root;
+        node *temp = p; // p不动，temp计算后缀串
+        while (temp != root && temp->count != -1) {
+            result += temp->count;
+            temp->count = -1;
+            temp = temp->fail;
+        }
+    }
+    return result;
+}
+
+int main() {
+    int num;
+    head = tail = 0;
+    root = new node();
+    scanf("%d", &num);
+    getchar();
+    for (int i = 0; i < num; ++i) {
+        scanf("%s", keyword);
+        insert(keyword);
+    }
+    build_ac();
+    scanf("%s", str);
+    if (query()) printf("YES\n");
+    else printf("NO\n");
+    return 0;
+}
+
+/*
+    假设有N个模式串，平均长度为L；文章长度为M。 建立Trie树：O(N*L) 建立fail指针：O(N*L) 模式匹配：O(M*L) 所以，总时间复杂度为:O( (N+M)*L )。
+*/
+```
 
 ## V. 常用数据结构、类和STL
 
-### IV.I. String
+<!-- Reference: http://c.biancheng.net/stl/ -->
 
-### IV.I. Iterator
+### V.I. String
 
-### IV.II. Vector
+**1. 构造**
 
-### IV.III. Pair
+```c++
+string str;
+string str = "ABC";
+string str("ABC");
+string str("ABC", maxlen);
+string str("ABC", startpos, strlen);
+string str(repeattimes, 'A');
+```
 
-### IV.IV. Priority Queue
+**2. 常用成员函数**
 
-### IV.V. Map
+```c++
+str.assign("ABC", 1, 2);        // 清空重新赋值，从某下标开始，保留指定长度
+int len = str.length();         // 获取长度
+str.resize(newlen);             // 设置长度，不足补'\0'
+str.resize(newlen, fillchar);   // 设置长度，不足补fillchar
+str.swap(anotherstr);           // 交换值
+str.push_back('A');             // 末尾添加字符
+str.append("ABC");              // 末尾添加字符串
+str.insert(2, "ABC");           // 插入字符
+str.erase(2);                   // 清除指定下标及之后的所有值
+str.erase(2, 1);                // 清除指定下标及之后的指定长度的值
+str.clear();                    // 清空
+str.replace(2, 4, "ABCD");      // 替换指定下标及之后的指定长度的值
+bool isempty = str.empty();     // 判断是否为空
+```
 
-### IV.VI. 并查集
+**3. 反转**
 
-### V.VII. 线段树
+```c++
+string str("ABC");
+reverse(str.begin(), str.end());  // 反转[first, last)范围内的元素的顺序
+cout << str << endl;
+```
 
-思想类似倍增。解决满足区间可加性的点修改、区间查询、区间修改。
+**4. 查找**
+
+```c++
+string str("ABCDEFGABCD");                      //11个字符
+int n;
+
+/*查找成功返回位置,查找失败,则n等于-1*/
+/*find():从头查找某个字符串*/
+n= str.find('A');              //查找"A",n=0;
+n= str.find("AB");             //查找"AB",n=0;
+n= str.find("BC",1);           //从位置1处,查找"BC",n=1;
+n= str.find("CDEfg",1,3);      //从位置1处,查找"CDEfg"的前3个字符,等价于str.find("CDE",1),n=2;
+
+/*rfind():反向(reverse)查找,从末尾处开始,向前查找*/
+n= str.rfind("CD");           //从位置10开始向前查找,n=9
+n= str.rfind("CD",5);         //从位置5开始向前查找,n=2
+n= str.rfind("CDEfg",5,3);    //等价于str.rfind("CDE",5);       ,所以n=2
+
+/* find_first_of ():查找str里是否包含有子串中任何一个字符*/
+n= str.find_first_of("abcDefg");     //由于str位置3是'D',等于"abcDefg"的'D',所以n=3
+n= str.find_first_of("abcDefg",1,4); //等价于str. find_first_of ("abcD",1); 所以n=3
+
+/* find_last_of ():末尾查找, 从末尾处开始,向前查找是否包含有子串中任何一个字符*/
+n= str.find_last_of("abcDefg");      //由于str末尾位置10是'D',所以n=10
+n= str.find_last_of("abcDefg",5,4);  //等价于str. find_last_of ("abcD",5); 所以n=3
+
+/* find_first_not_of ():匹配子串任何一个字符,若某个字符不相等则返回str处的位置,全相等返回-1*/
+n= str.find_last_not_of("ABC");    //由于str位置3'D',在子串里没有,所以 n=3
+n= str.find_last_not_of("aABDC");  //由于str位置4 'F',在子串里没有,所以 n=4
+n= str.find_last_not_of("aBDC");   //由于str位置0 'A',在子串里没有,所以 n=0
+
+/* find_last_not_of ():反向匹配子串任何一个字符,若某个字符不相等则返回str处的位置,全相等返回-1*/
+n= str.find_last_not_of("aBDC");  //由于str位置7'A',在子串里没有,所以 n=7
+```
+
+**5. 复制和子串**
+
+```c++
+str2=str1.substr(2);        //提取子串,提取出str1的下标为2到末尾,给str2
+str2=str1.substr(2,3);     //提取子串,从 str1的下标为2开始,提取3个字节给str2
+const char *s1= str.data();   //将string类转为字符串数组,返回给s1
+char *s=new char[10];
+str.copy(s,count,pos);    //将str里的pos位置开始,拷贝count个字符,存到s里.
+```
+
+### V.II. Iterator
+
+**1. 构造**
+
+```c++
+Class::iterator iter;               // 正向迭代器
+Class::const_iterator iter;         // 常量正向迭代器
+Class::reverse_iterator iter;       // 反向迭代器
+Class::const_reverse_iterator iter; // 常量反向迭代器
+```
+
+**2. 迭代**
+
+```c++
+vector<int> v{0, 1, 2, 3, 4};
+
+vector<int>::iterator iter;
+assert(*(++iter) == 1);  // 下一个元素
+vector<int>::reverse_iterator iter;
+assert(*(++iter) == 3);  // 上一个元素
+
+for (vector<int>::iterator i = v.begin(); i != v.end(); ++i);
+for (vector<int>::reverse_iterator i = v.rbegin(); i != v.rend(); ++i);
+```
+
+**3. 分类**
+
+1. **正向迭代器：** `++p`, `p++`, `*p`, `iter1 = iter2`, `==`, `!=`
+2. **双向迭代器：** 正向迭代器, `--p`, `p--`
+3. **随机访问迭代器：** 双向迭代器, `+=`, `-=`, `iter + integer`, `iter - integer`, `iter[integer]`, `<`, `>`, `<=`, `>=`, `iter1 - iter2`
+
+| 容器 | 迭代器种类 |
+| :-: | :-: |
+| 数组、vector、deque | 随机访问 |
+| list、set、multiset、map、multimap | 双向 |
+| stack、queue、priority_queue | 不支持 |
+
+**4. 成员函数**
+
+```c++
+advance(iter, n);           // 前后移动n个元素
+distance(iter1, iter2);     // 计算距离（前者不大于后者）
+iter_swap(iter1, iter2);    // 交换指向的值
+```
+
+### V.III. Pair（键值对）
+
+**1. 构造**
+
+```c++
+pair<string, double> pair1;
+pair1.first = "key";
+pair1.second = 0;
+pair<string, string> pair2("first", "second");
+pair<string, string> pair3(pair2);
+pair<string, string> pair4(make_pair("first", "second"));
+```
+
+**2. 比较**
+
+先比first成员，再比second成员。
+
+**3. 成员函数**
+
+```c++
+pair1.swap(pair2);
+```
+
+### V.IV. Vector和Double-ended Queue
+
+vector可以尾端操作花费常量时间，deque可以两端操作花费常量时间（数据未必存储在连续空间上）。
+
+**1. 构造**
+
+```c++
+vector<int> vec;
+vector<int> vec{0, 1, 2, 3};
+vector<int> vec(10, 1);  // 指定长度，初始化为1
+vector<int> vec(vec1);
+vector<int> vec(begin(vec1), end(vec1));
+
+deque<int> que;
+deque<int> que{0, 1, 2, 3};
+deque<int> que(10, 1);  // 指定长度，初始化为1
+deque<int> que(que1);
+deque<int> que(begin(que1), end(que1));
+```
+
+**2. 成员函数**
+
+```c++
+vec.begin();
+vec.end();
+vec.rbegin();
+vec.rend();
+vec.size();
+vec.resize();
+vec.empty();
+vec.front();        // 首端元素引用
+vec.back();         // 尾端元素引用
+vec.data();         // 首端元素指针
+vec.assign();
+vec.push_back();
+vec.emplace_back(); // 原地尾端插入
+vec.pop_back();
+vec.insert();
+vec.emplace();      // 原地指定位置插入
+vec.erase();
+vec.clear();
+vec.swap();
+
+que.begin();
+que.end();
+que.rbegin();
+que.rend();
+que.size();
+que.resize();
+que.empty();
+que.front();            // 首端元素引用
+que.back();             // 尾端元素引用
+que.assign();
+que.push_front();
+que.emplace_front();    // 原地首端插入
+que.push_back();
+que.emplace_back();     // 原地尾端插入
+que.pop_front();
+que.pop_back();
+que.insert();
+que.emplace();          // 原地指定位置插入
+que.erase();
+que.clear();
+que.swap();
+```
+
+### V.V. Priority Queue
+
+priority_queue：优先队列、堆。
+
+定义：
+
+```c++
+template <typename T,                       // 元素类型
+        typename Container=std::vector<T>,  // 底层容器类型，只能是vector或deque
+        typename Compare=std::less<T> >     // less（从大到小）、greater（从小到大）、自定义函数
+class priority_queue {}
+```
+
+**1. 构造**
+
+```c++
+int values[]{4, 1, 3, 2};
+priority_queue<int> pque;
+priority_queue<int> pque(values, values + 4);  // {4, 2, 3, 1}
+priority_queue<int> pque(begin(values), end(values), deque<int>, greater<int>); // {1, 3, 2, 4}
+```
+
+**2. 成员函数**
+
+```c++
+pque.size();
+pque.empty();
+pque.top();                     // 首端元素引用
+pque.push(const T& obj);        // 压入对象副本
+pque.push(T&& obj);             // 压入对象本身
+pque.emplace(Args&&... args);
+pque.pop();
+pque.swap(pque1);
+```
+
+**3. 自定义比较**
+
+<!-- Reference: https://www.cnblogs.com/yalphait/articles/8889221.html -->
+
+```c++
+// 重载运算符
+bool operator < (T a, T b) {
+    // true表示a优先级低于b
+}
+
+// 自定义比较函数
+struct cmp {
+    bool operator() (T a, T b) {
+        // true表示a优先级低于b
+    }
+};
+priority_queue<T, vector<T>, cmp> pque;
+```
+
+### V.VI. List（双向链表）
+
+**1. 构造**
+
+```c++
+list<int> lst;
+list<int> lst(10);
+list<int> lst(10, 1);
+list<int> lst(values, values + 4);
+list<int> lst(begin(values), end(values));
+```
+
+**2. 成员函数**
+
+```c++
+lst.begin();
+lst.end();
+lst.rbegin();
+lst.rend();
+lst.size();
+lst.resize();
+lst.empty();
+lst.front();            // 首端元素引用
+lst.back();             // 尾端元素引用
+lst.assign();
+lst.push_front();
+lst.emplace_front();    // 原地首端插入
+lst.push_back();
+lst.emplace_back();     // 原地尾端插入
+lst.pop_front();
+lst.pop_back();
+lst.insert();
+lst.emplace();          // 原地指定位置插入
+lst.erase();
+lst.clear();
+lst.swap();
+lst.remove(val);        // 删除值为val的元素
+lst.remove_if();        // 删除符合条件的元素
+lst.unique();           // 删除容器中相邻重复元素，保留其一
+lst.merge();            // 合并两个有序容器
+lst.sort();
+lst.reverse();          // 容器内元素反转顺序
+```
+
+### V.VII. Unordered Map（哈希表）
+
+定义：
+
+```c++
+template <class Key,                        //键值对中键的类型
+        class T,                            //键值对中值的类型
+        class Hash=hash<Key>,               //容器内部存储键值对所用的哈希函数
+        class Pred=equal_to<Key>,           //判断各个键值对键相同的规则
+        class Alloc=allocator<pair<const Key, T> >  // 指定分配器对象的类型
+> class unordered_map;
+```
+
+**1. 构造**
+
+```c++
+unordered_map<string, string> umap;
+unordered_map<string, string> umap{{"key1", "value1"}, {"key2", "value2"}};
+unordered_map<string, string> umap(anotherumap);
+// others omitted
+```
+
+**2. 成员函数**
+
+```c++
+umap.begin();
+umap.end();
+umap.rbegin();
+umap.rend();
+umap.size();
+umap.resize();
+umap.empty();
+umap.find(key);         // 查找位置
+umap.count(key);        // 键为key的键值对数量
+umap.equal_range(key);  // 返回一个pair对象，其包含2个迭代器，用于表明当前容器中键为key的键值对所在的范围
+umap.insert();
+umap.emplace();         // 原地指定位置插入
+umap.erase();
+umap.clear();
+umap.swap();
+umap.reverse();         // 容器内元素反转顺序
+umap.hash_function();   // 哈希函数对象
+```
+
+### V.VIII. 并查集
+
+```c++
+int fa[MAXN];
+
+void initialize(int n) {
+    for (int i = 1; i <= n; ++i) {
+        fa[i] = i;
+    }
+}
+
+// 无路径压缩
+int find(int x) {
+    if (fa[x] == x) return x;
+    return find(fa[x]);
+}
+
+// 路径压缩
+int find(int x) {
+    return fa[x] == x ? x : (fa[x] = find(fa[x]));
+}
+
+void merge(int dst, int src) {
+    fa[find(dst)] = find(src);
+}
+```
+
+---
+
+## Reference
+
+排名不分先后。
+
+1. https://blog.csdn.net/xyqqwer/article/details/81433429
+2. https://zhuanlan.zhihu.com/p/122413160
+3. https://blog.csdn.net/MikeJackSTG/article/details/81806120
+4. https://zhuanlan.zhihu.com/p/93857890
+5. https://zhuanlan.zhihu.com/p/83334559
+6. http://c.biancheng.net/stl/
+7. https://www.cnblogs.com/yalphait/articles/8889221.html
+
+---
+
+## Changelog
+
+### v1.0.0
+
+**Add:**
+
+- 补全IV.II.、IV.III.和V.；
+- 补全引用；
+- 增加C++ STL部分章节。
+
+**Remove:**
+
+- 删除线段树章节。
+
+**Modify & Fix:**
+
+- 修正部分标题序号；
+- 修正部分用词失当。

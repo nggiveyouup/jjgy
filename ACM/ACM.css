@@ -2,3 +2,19 @@
 html, body {
     font-family: STKaiti;
 }
+
+code {
+    font-family: Consolas, STKaiti;
+}
+
+/* pre {
+    border: none;
+}
+
+pre:not(.hljs), pre.hljs code > div {
+    padding: 0px;
+}
+
+.hljs {
+    padding: 0px;
+} */
